@@ -1,0 +1,28 @@
+{
+	"name": "EventOutputCSV",
+	"properties": {
+		"description": "Stores transformed data for export into sql table PenguinEvent.",
+		"linkedServiceName": {
+			"referenceName": "Blob",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"OutputFileNameCSV": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"container": "cleanedoutputs"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"quoteChar": "\""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}
