@@ -162,14 +162,6 @@
 				]
 			}
 		],
-		"parameters": {
-			"InputFileNameCSV": {
-				"type": "string"
-			},
-			"CleanedOutputName": {
-				"type": "string"
-			}
-		},
 		"annotations": [],
 		"lastPublishTime": "2020-10-08T11:53:25Z"
 	},
