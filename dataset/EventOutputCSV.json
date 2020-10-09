@@ -6,11 +6,6 @@
 			"referenceName": "Blob",
 			"type": "LinkedServiceReference"
 		},
-		"parameters": {
-			"OutputFileNameCSV": {
-				"type": "string"
-			}
-		},
 		"annotations": [],
 		"type": "DelimitedText",
 		"typeProperties": {

@@ -18,28 +18,7 @@
 				"typeProperties": {
 					"dataflow": {
 						"referenceName": "dataflow1",
-						"type": "DataFlowReference",
-						"parameters": {
-							"InputFileNameCSV": {
-								"value": "'@{pipeline().parameters.InputFileNameCSV}'",
-								"type": "Expression"
-							},
-							"OutputFileNameCSV": "concat(toString(Weight), toString(currentDate()))"
-						},
-						"datasetParameters": {
-							"WeightLogCSV": {
-								"InputFileNameCSV": {
-									"value": "@pipeline().parameters.InputFileNameCSV",
-									"type": "Expression"
-								}
-							},
-							"Sink": {
-								"OutputFileNameCSV": {
-									"value": "concat(toString(Weight), toString(currentDate()))",
-									"type": "Expression"
-								}
-							}
-						}
+						"type": "DataFlowReference"
 					},
 					"compute": {
 						"coreCount": 8,
@@ -145,13 +124,7 @@
 				"inputs": [
 					{
 						"referenceName": "EventOutputCSV",
-						"type": "DatasetReference",
-						"parameters": {
-							"OutputFileNameCSV": {
-								"value": "@pipeline().parameters.CleanedOutputName",
-								"type": "Expression"
-							}
-						}
+						"type": "DatasetReference"
 					}
 				],
 				"outputs": [
