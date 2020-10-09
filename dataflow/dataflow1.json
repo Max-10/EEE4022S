@@ -6,14 +6,14 @@
 			"sources": [
 				{
 					"dataset": {
-						"referenceName": "WeightLogCSV",
+						"referenceName": "UploadedCSV",
 						"type": "DatasetReference"
 					},
 					"name": "WeightLogCSV"
 				},
 				{
 					"dataset": {
-						"referenceName": "TagInput",
+						"referenceName": "UploadedCSV",
 						"type": "DatasetReference"
 					},
 					"name": "RawTagDataCSV"
@@ -59,9 +59,12 @@
 				},
 				{
 					"name": "CleanedData"
+				},
+				{
+					"name": "RemoveTrash"
 				}
 			],
-			"script": "source(output(\n\t\tEpoch as integer,\n\t\tWeight as double\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false,\n\tpartitionBy('hash', 1)) ~> WeightLogCSV\nsource(output(\n\t\tEpoch as integer,\n\t\tMessage as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> RawTagDataCSV\nWeightLogCSV derive(Date = trim(left(toString(toTimestamp(seconds(Epoch))),10)),\n\t\tTime = trim(right(toString(toTimestamp(seconds(Epoch))),8))) ~> DateTimeColumn\nDateTimeColumn keyGenerate(output(EventID as long),\n\tstartAt: 1L) ~> GenerateSurrogateKey\nGenerateSurrogateKey filter(0.8<Weight\r\n&&Weight<10) ~> Filter1\nFilter1 select(mapColumn(\n\t\tEpoch,\n\t\tWeight,\n\t\tDate,\n\t\tTime,\n\t\tEventID\n\t),\n\tpartitionBy('hash', 1),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> Select1\nSelect1 alterRow(upsertIf(true())) ~> AlterRow1\nRawTagDataCSV filter(startsWith(Message, 'TAG')) ~> Date\nDate derive(Date = trim(left(toString(toTimestamp(seconds(Epoch))),10)),\n\t\tTime = trim(right(toString(toTimestamp(seconds(Epoch))),8)),\n\t\tMessage = trim(left(Message,7))) ~> CleaningandDateTime\nCleaningandDateTime alterRow(upsertIf(true())) ~> CleanedData\nAlterRow1 sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:[(concat(toString(\"WeightLog_\") ,toString(currentDate())))],\n\tmapColumn(\n\t\tEventID,\n\t\tEpoch,\n\t\tEventTime = Time,\n\t\tEventDate = Date,\n\t\tPenguinWeight = Weight\n\t),\n\tpartitionBy('hash', 1),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> Sink\nCleanedData sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:[(concat(toString(\"TagLog_\") ,toString(currentDate())))],\n\tpartitionBy('hash', 1),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> sink1"
+			"script": "source(output(\n\t\tEpoch as integer,\n\t\tWeight as double,\n\t\tJunk as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false,\n\tmoveFiles: ['','historic_weight'],\n\twildcardPaths:['weight*.csv'],\n\tpartitionBy('hash', 1)) ~> WeightLogCSV\nsource(output(\n\t\tEpoch as integer,\n\t\tMessage as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false,\n\tmoveFiles: ['','historic_serial'],\n\twildcardPaths:['serial*.csv']) ~> RawTagDataCSV\nWeightLogCSV derive(Date = trim(left(toString(toTimestamp(seconds(Epoch))),10)),\n\t\tTime = trim(right(toString(toTimestamp(seconds(Epoch))),8))) ~> DateTimeColumn\nRemoveTrash keyGenerate(output(EventID as long),\n\tstartAt: 1L) ~> GenerateSurrogateKey\nGenerateSurrogateKey filter(0.8<Weight\r\n&&Weight<10) ~> Filter1\nFilter1 select(mapColumn(\n\t\tEpoch,\n\t\tWeight,\n\t\tDate,\n\t\tTime,\n\t\tEventID\n\t),\n\tpartitionBy('hash', 1),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> Select1\nSelect1 alterRow(upsertIf(true())) ~> AlterRow1\nRawTagDataCSV filter(startsWith(Message, 'TAG')) ~> Date\nDate derive(Date = trim(left(toString(toTimestamp(seconds(Epoch))),10)),\n\t\tTime = trim(right(toString(toTimestamp(seconds(Epoch))),8)),\n\t\tMessage = trim(left(Message,7))) ~> CleaningandDateTime\nCleaningandDateTime alterRow(upsertIf(true())) ~> CleanedData\nDateTimeColumn select(mapColumn(\n\t\tEpoch,\n\t\tWeight,\n\t\tDate,\n\t\tTime\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> RemoveTrash\nAlterRow1 sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:[(concat(toString(\"WeightLog_\") ,toString(currentDate())))],\n\tmapColumn(\n\t\tDate,\n\t\tTime,\n\t\tEventID\n\t),\n\tpartitionBy('hash', 1),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> Sink\nCleanedData sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:[(concat(toString(\"TagLog_\") ,toString(currentDate())))],\n\tpartitionBy('hash', 1),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> sink1"
 		}
 	}
 }
