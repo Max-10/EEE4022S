@@ -1,0 +1,41 @@
+{
+	"name": "TagIDTable",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "SQLdatabase",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "EventID",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "Epoch",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "EventDate",
+				"type": "date"
+			},
+			{
+				"name": "EventTime",
+				"type": "time",
+				"scale": 7
+			},
+			{
+				"name": "TagID",
+				"type": "int",
+				"precision": 10
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "TagID"
+		}
+	}
+}
