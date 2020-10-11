@@ -1,0 +1,33 @@
+{
+	"name": "Upsert_CSV_to_SQL",
+	"properties": {
+		"description": "Iterates through CleanOutput in Blob container. Upserts the csv into the appropriate Table, then moves the csv into a historic folder.",
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "EventOutputCSV",
+						"type": "DatasetReference"
+					},
+					"name": "WeightLogCSV"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "PenguinEvent",
+						"type": "DatasetReference"
+					},
+					"name": "SQLTable"
+				}
+			],
+			"transformations": [
+				{
+					"name": "AlterRow1"
+				}
+			],
+			"script": "source(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false,\n\twildcardPaths:['WeightLog*']) ~> WeightLogCSV\nWeightLogCSV alterRow(upsertIf(true())) ~> AlterRow1\nAlterRow1 sink(input(\n\t\tEventID as integer,\n\t\tEpoch as integer,\n\t\tEventDate as date,\n\t\tEventTime as timestamp,\n\t\tPenguinWeight as double\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table') ~> SQLTable"
+		}
+	}
+}
