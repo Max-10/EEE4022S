@@ -11,6 +11,13 @@
 						"type": "DatasetReference"
 					},
 					"name": "WeightLogCSV"
+				},
+				{
+					"dataset": {
+						"referenceName": "EventOutputCSV",
+						"type": "DatasetReference"
+					},
+					"name": "TagIDCSV"
 				}
 			],
 			"sinks": [
@@ -20,14 +27,24 @@
 						"type": "DatasetReference"
 					},
 					"name": "SQLTable"
+				},
+				{
+					"dataset": {
+						"referenceName": "TagIDTable",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
 				}
 			],
 			"transformations": [
 				{
 					"name": "AlterRow1"
+				},
+				{
+					"name": "AlterRow2"
 				}
 			],
-			"script": "source(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false,\n\twildcardPaths:['WeightLog*']) ~> WeightLogCSV\nWeightLogCSV alterRow(upsertIf(true())) ~> AlterRow1\nAlterRow1 sink(input(\n\t\tEventID as integer,\n\t\tEpoch as integer,\n\t\tEventDate as date,\n\t\tEventTime as timestamp,\n\t\tPenguinWeight as double\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table') ~> SQLTable"
+			"script": "source(output(\n\t\tEventID as short,\n\t\tEpoch as integer,\n\t\tEventDate as date,\n\t\tEventTime as timestamp 'HH:mm:ss',\n\t\tWeight as double\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false,\n\twildcardPaths:['WeightLog*']) ~> WeightLogCSV\nsource(output(\n\t\tEventID as short,\n\t\tEpoch as integer,\n\t\tEventDate as date,\n\t\tEventTime as timestamp 'HH:mm:ss',\n\t\tTagID as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false,\n\twildcardPaths:['TagLog*']) ~> TagIDCSV\nWeightLogCSV alterRow(upsertIf(true())) ~> AlterRow1\nTagIDCSV alterRow(upsertIf(true())) ~> AlterRow2\nAlterRow1 sink(input(\n\t\tEventID as integer,\n\t\tEpoch as integer,\n\t\tEventDate as date,\n\t\tEventTime as timestamp,\n\t\tPenguinWeight as double\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:true,\n\tkeys:['EventID'],\n\tformat: 'table',\n\tmapColumn(\n\t\tEventID,\n\t\tEpoch,\n\t\tEventDate,\n\t\tEventTime,\n\t\tPenguinWeight = Weight\n\t)) ~> SQLTable\nAlterRow2 sink(input(\n\t\tEventID as integer,\n\t\tEpoch as integer,\n\t\tEventDate as date,\n\t\tEventTime as timestamp,\n\t\tTagID as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:true,\n\tkeys:['EventID'],\n\tformat: 'table',\n\tmapColumn(\n\t\tEventID,\n\t\tEpoch,\n\t\tEventDate,\n\t\tEventTime,\n\t\tTagID\n\t)) ~> sink1"
 		}
 	}
 }
