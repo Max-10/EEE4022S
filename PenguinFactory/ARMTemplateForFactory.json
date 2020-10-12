@@ -27,8 +27,7 @@
 			"properties": {
 				"activities": [
 					{
-						"name": "InputWeightCSV to CleanedCSV",
-						"description": "Cleans weightLog Csv stores it in output PenguinEventDatabase",
+						"name": "CleaningofData",
 						"type": "ExecuteDataFlow",
 						"dependsOn": [],
 						"policy": {
@@ -46,7 +45,9 @@
 								"parameters": {},
 								"datasetParameters": {
 									"WeightLogCSV": {},
-									"Sink": {}
+									"RawTagDataCSV": {},
+									"Sink": {},
+									"sink1": {}
 								}
 							},
 							"staging": {},
@@ -57,8 +58,8 @@
 						}
 					},
 					{
-						"name": "CleanedCSV to EventSQL",
-						"type": "Copy",
+						"name": "Upsert_CSV_to_SQL",
+						"type": "ExecuteDataFlow",
 						"dependsOn": [],
 						"policy": {
 							"timeout": "7.00:00:00",
@@ -69,102 +70,23 @@
 						},
 						"userProperties": [],
 						"typeProperties": {
-							"source": {
-								"type": "DelimitedTextSource",
-								"storeSettings": {
-									"type": "AzureBlobStorageReadSettings",
-									"recursive": true,
-									"wildcardFileName": "*"
-								},
-								"formatSettings": {
-									"type": "DelimitedTextReadSettings"
+							"dataflow": {
+								"referenceName": "Upsert_CSV_to_SQL",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"WeightLogCSV": {},
+									"TagIDCSV": {},
+									"SQLTable": {},
+									"sink1": {}
 								}
 							},
-							"sink": {
-								"type": "AzureSqlSink"
-							},
-							"enableStaging": false,
-							"translator": {
-								"type": "TabularTranslator",
-								"mappings": [
-									{
-										"source": {
-											"type": "Int32",
-											"physicalType": "String",
-											"ordinal": 1
-										},
-										"sink": {
-											"name": "EventID",
-											"type": "Int32",
-											"physicalType": "int"
-										}
-									},
-									{
-										"source": {
-											"type": "Int32",
-											"ordinal": 2
-										},
-										"sink": {
-											"name": "Epoch",
-											"type": "Int32",
-											"physicalType": "int"
-										}
-									},
-									{
-										"source": {
-											"type": "TimeSpan",
-											"ordinal": 3
-										},
-										"sink": {
-											"name": "EventTime",
-											"type": "TimeSpan",
-											"physicalType": "time"
-										}
-									},
-									{
-										"source": {
-											"type": "DateTime",
-											"ordinal": 4
-										},
-										"sink": {
-											"name": "EventDate",
-											"type": "DateTime",
-											"physicalType": "date"
-										}
-									},
-									{
-										"source": {
-											"type": "Double",
-											"ordinal": 5
-										},
-										"sink": {
-											"name": "PenguinWeight",
-											"type": "Double",
-											"physicalType": "float"
-										}
-									}
-								],
-								"typeConversion": true,
-								"typeConversionSettings": {
-									"allowDataTruncation": true,
-									"treatBooleanAsNumber": false
-								}
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
 							}
-						},
-						"inputs": [
-							{
-								"referenceName": "EventOutputCSV",
-								"type": "DatasetReference",
-								"parameters": {}
-							}
-						],
-						"outputs": [
-							{
-								"referenceName": "PenguinEvent",
-								"type": "DatasetReference",
-								"parameters": {}
-							}
-						]
+						}
 					}
 				],
 				"annotations": [],
@@ -172,8 +94,7 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/dataflows/dataflow1')]",
-				"[concat(variables('factoryId'), '/datasets/EventOutputCSV')]",
-				"[concat(variables('factoryId'), '/datasets/PenguinEvent')]"
+				"[concat(variables('factoryId'), '/dataflows/Upsert_CSV_to_SQL')]"
 			]
 		},
 		{
@@ -250,6 +171,112 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/TagIDTable')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "SQLdatabase",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "EventID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "Epoch",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "EventDate",
+						"type": "date"
+					},
+					{
+						"name": "EventTime",
+						"type": "time",
+						"scale": 7
+					},
+					{
+						"name": "TagID",
+						"type": "int",
+						"precision": 10
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "TagID"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/SQLdatabase')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TagInput')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Blob",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "serial_log.csv",
+						"container": "tagguano"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"type": "String"
+					},
+					{
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Blob')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/UploadedCSV')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Blob",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"container": "uploadblob"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Blob')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/WeightLogCSV')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
@@ -312,6 +339,63 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/Upsert_CSV_to_SQL')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Iterates through CleanOutput in Blob container. Upserts the csv into the appropriate Table, then moves the csv into a historic folder.",
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "EventOutputCSV",
+								"type": "DatasetReference"
+							},
+							"name": "WeightLogCSV"
+						},
+						{
+							"dataset": {
+								"referenceName": "EventOutputCSV",
+								"type": "DatasetReference"
+							},
+							"name": "TagIDCSV"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "PenguinEvent",
+								"type": "DatasetReference"
+							},
+							"name": "SQLTable"
+						},
+						{
+							"dataset": {
+								"referenceName": "TagIDTable",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "AlterRow1"
+						},
+						{
+							"name": "AlterRow2"
+						}
+					],
+					"script": "source(output(\n\t\tEventID as short,\n\t\tEpoch as integer,\n\t\tEventDate as date,\n\t\tEventTime as timestamp 'HH:mm:ss',\n\t\tWeight as double\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: true,\n\tmoveFiles: ['','historic_cleaned_weights'],\n\twildcardPaths:['WeightLog*']) ~> WeightLogCSV\nsource(output(\n\t\tEventID as short,\n\t\tEpoch as integer,\n\t\tEventDate as date,\n\t\tEventTime as timestamp 'HH:mm:ss',\n\t\tTagID as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: true,\n\tmoveFiles: ['','historic_clean_serial'],\n\twildcardPaths:['TagLog*'],\n\tpartitionBy('hash', 1)) ~> TagIDCSV\nWeightLogCSV alterRow(upsertIf(true())) ~> AlterRow1\nTagIDCSV alterRow(upsertIf(true())) ~> AlterRow2\nAlterRow1 sink(input(\n\t\tEventID as integer,\n\t\tEpoch as integer,\n\t\tEventDate as date,\n\t\tEventTime as timestamp,\n\t\tPenguinWeight as double\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:true,\n\tupsertable:true,\n\tkeys:['EventID'],\n\tformat: 'table',\n\tpreSQLs:['SET IDENTITY_INSERT [dbo].[PenguinEvent] ON'],\n\tmapColumn(\n\t\tEventID,\n\t\tEpoch,\n\t\tEventDate,\n\t\tEventTime,\n\t\tPenguinWeight = Weight\n\t)) ~> SQLTable\nAlterRow2 sink(input(\n\t\tEventID as integer,\n\t\tEpoch as integer,\n\t\tEventDate as date,\n\t\tEventTime as timestamp,\n\t\tTagID as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:true,\n\tupsertable:true,\n\tkeys:['EventID'],\n\tformat: 'table',\n\tpreSQLs:['SET IDENTITY_INSERT [dbo].[TagID] ON'],\n\tmapColumn(\n\t\tEventID,\n\t\tEpoch,\n\t\tEventDate,\n\t\tEventTime,\n\t\tTagID\n\t)) ~> sink1"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/EventOutputCSV')]",
+				"[concat(variables('factoryId'), '/datasets/PenguinEvent')]",
+				"[concat(variables('factoryId'), '/datasets/TagIDTable')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/dataflow1')]",
 			"type": "Microsoft.DataFactory/factories/dataflows",
 			"apiVersion": "2018-06-01",
@@ -321,10 +405,17 @@
 					"sources": [
 						{
 							"dataset": {
-								"referenceName": "WeightLogCSV",
+								"referenceName": "UploadedCSV",
 								"type": "DatasetReference"
 							},
 							"name": "WeightLogCSV"
+						},
+						{
+							"dataset": {
+								"referenceName": "UploadedCSV",
+								"type": "DatasetReference"
+							},
+							"name": "RawTagDataCSV"
 						}
 					],
 					"sinks": [
@@ -334,6 +425,13 @@
 								"type": "DatasetReference"
 							},
 							"name": "Sink"
+						},
+						{
+							"dataset": {
+								"referenceName": "EventOutputCSV",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
 						}
 					],
 					"transformations": [
@@ -350,15 +448,75 @@
 							"name": "Select1"
 						},
 						{
-							"name": "AlterRow1"
+							"name": "Date"
+						},
+						{
+							"name": "CleaningandDateTime"
+						},
+						{
+							"name": "CleanedData"
+						},
+						{
+							"name": "ColumnSorting"
+						},
+						{
+							"name": "ReOrderColumns"
+						},
+						{
+							"name": "SurrogateKey1"
+						},
+						{
+							"name": "Select2"
+						},
+						{
+							"name": "TagIDextraction"
 						}
 					],
-					"script": "source(output(\n\t\tEpoch as integer,\n\t\tWeight as double\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false,\n\tpartitionBy('hash', 1)) ~> WeightLogCSV\nWeightLogCSV derive(Date = trim(left(toString(toTimestamp(seconds(Epoch))),10)),\n\t\tTime = trim(right(toString(toTimestamp(seconds(Epoch))),8))) ~> DateTimeColumn\nDateTimeColumn keyGenerate(output(EventID as long),\n\tstartAt: 1L) ~> GenerateSurrogateKey\nGenerateSurrogateKey filter(0.8<Weight\r\n&&Weight<10) ~> Filter1\nFilter1 select(mapColumn(\n\t\tEpoch,\n\t\tWeight,\n\t\tDate,\n\t\tTime,\n\t\tEventID\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> Select1\nSelect1 alterRow(insertIf(true())) ~> AlterRow1\nAlterRow1 sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:[(\"Done\")],\n\tmapColumn(\n\t\tEventID,\n\t\tEpoch,\n\t\tEventTime = Time,\n\t\tEventDate = Date,\n\t\tPenguinWeight = Weight\n\t),\n\tpartitionBy('hash', 1),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> Sink"
+					"script": "source(output(\n\t\tEpoch as integer,\n\t\tWeight as double,\n\t\tJunk as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: true,\n\tmoveFiles: ['','historic_weight'],\n\twildcardPaths:['weight*.csv'],\n\tpartitionBy('hash', 1)) ~> WeightLogCSV\nsource(output(\n\t\tEpoch as integer,\n\t\tMessage as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: true,\n\tmoveFiles: ['','historic_serial'],\n\twildcardPaths:['serial*.csv']) ~> RawTagDataCSV\nWeightLogCSV derive(Date = trim(left(toString(toTimestamp(seconds(Epoch))),10)),\n\t\tTime = trim(right(toString(toTimestamp(seconds(Epoch))),8))) ~> DateTimeColumn\nColumnSorting keyGenerate(output(EventID as long),\n\tstartAt: 1L,\n\tpartitionBy('hash', 1)) ~> GenerateSurrogateKey\nGenerateSurrogateKey filter(0.8<Weight\r\n&&Weight<10) ~> Filter1\nFilter1 select(mapColumn(\n\t\tEpoch,\n\t\tWeight,\n\t\tDate,\n\t\tTime,\n\t\tEventID\n\t),\n\tpartitionBy('hash', 1),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> Select1\nRawTagDataCSV filter(startsWith(Message, 'TAG')) ~> Date\nTagIDextraction derive(Date = trim(left(toString(toTimestamp(seconds(Epoch))),10)),\n\t\tTime = trim(right(toString(toTimestamp(seconds(Epoch))),8))) ~> CleaningandDateTime\nCleaningandDateTime alterRow(upsertIf(true())) ~> CleanedData\nDateTimeColumn select(mapColumn(\n\t\tEpoch,\n\t\tWeight,\n\t\tDate,\n\t\tTime\n\t),\n\tskipDuplicateMapInputs: false,\n\tskipDuplicateMapOutputs: false) ~> ColumnSorting\nSelect1 select(mapColumn(\n\t\tEventID,\n\t\tEpoch,\n\t\tDate,\n\t\tTime,\n\t\tWeight\n\t),\n\tskipDuplicateMapInputs: false,\n\tskipDuplicateMapOutputs: false) ~> ReOrderColumns\nCleanedData keyGenerate(output(EventID as long),\n\tstartAt: 1L) ~> SurrogateKey1\nSurrogateKey1 select(mapColumn(\n\t\tEventID,\n\t\tEpoch,\n\t\tDate,\n\t\tTime,\n\t\tMessage\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> Select2\nDate derive(Message = toInteger(trim(right(trim(left(Message,7)),2)))) ~> TagIDextraction\nReOrderColumns sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:[(concat(toString(\"WeightLog_\") ,toString(currentDate())))],\n\tmapColumn(\n\t\tEventID,\n\t\tEpoch,\n\t\tDate,\n\t\tTime,\n\t\tWeight\n\t),\n\tpartitionBy('hash', 1)) ~> Sink\nSelect2 sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:[(concat(toString(\"TagLog_\") ,toString(currentDate())))],\n\tmapColumn(\n\t\tEventID,\n\t\tEpoch,\n\t\tDate,\n\t\tTime,\n\t\tMessage\n\t),\n\tpartitionBy('hash', 1)) ~> sink1"
 				}
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/datasets/WeightLogCSV')]",
+				"[concat(variables('factoryId'), '/datasets/UploadedCSV')]",
 				"[concat(variables('factoryId'), '/datasets/EventOutputCSV')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Schedule')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Triggers pipeline, once a day at midnight",
+				"annotations": [],
+				"runtimeState": "Stopped",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "pipeline1",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Day",
+						"interval": 1,
+						"startTime": "2020-10-12T08:24:00.000Z",
+						"timeZone": "UTC",
+						"schedule": {
+							"minutes": [
+								0
+							],
+							"hours": [
+								0
+							]
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/pipeline1')]"
 			]
 		}
 	]
