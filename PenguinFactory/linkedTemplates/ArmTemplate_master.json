@@ -19,6 +19,10 @@
 			"type": "string",
 			"defaultValue": "/subscriptions/ff093b4d-e1b6-4506-b8f7-32420f93b811/resourceGroups/PenguinProject/providers/Microsoft.Storage/storageAccounts/inputblob"
 		},
+		"EventBased_properties_typeProperties_scope": {
+			"type": "string",
+			"defaultValue": "/subscriptions/ff093b4d-e1b6-4506-b8f7-32420f93b811/resourceGroups/PenguinProject/providers/Microsoft.Storage/storageAccounts/inputblob"
+		},
 		"containerUri": {
 			"type": "string",
 			"metadata": "URI to storage account containing linked ARM templates"
@@ -54,6 +58,9 @@
 					},
 					"UploadEvent_properties_typeProperties_scope": {
 						"value": "[parameters('UploadEvent_properties_typeProperties_scope')]"
+					},
+					"EventBased_properties_typeProperties_scope": {
+						"value": "[parameters('EventBased_properties_typeProperties_scope')]"
 					}
 				}
 			},

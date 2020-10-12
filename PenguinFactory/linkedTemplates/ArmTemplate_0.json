@@ -18,6 +18,10 @@
 		"UploadEvent_properties_typeProperties_scope": {
 			"type": "string",
 			"defaultValue": "/subscriptions/ff093b4d-e1b6-4506-b8f7-32420f93b811/resourceGroups/PenguinProject/providers/Microsoft.Storage/storageAccounts/inputblob"
+		},
+		"EventBased_properties_typeProperties_scope": {
+			"type": "string",
+			"defaultValue": "/subscriptions/ff093b4d-e1b6-4506-b8f7-32420f93b811/resourceGroups/PenguinProject/providers/Microsoft.Storage/storageAccounts/inputblob"
 		}
 	},
 	"variables": {
@@ -538,6 +542,37 @@
 							]
 						}
 					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/pipeline1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/EventBased')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "pipeline1",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
+					}
+				],
+				"type": "BlobEventsTrigger",
+				"typeProperties": {
+					"blobPathBeginsWith": "/uploadblob/blobs/up",
+					"blobPathEndsWith": ".csv",
+					"ignoreEmptyBlobs": true,
+					"scope": "[parameters('EventBased_properties_typeProperties_scope')]",
+					"events": [
+						"Microsoft.Storage.BlobCreated"
+					]
 				}
 			},
 			"dependsOn": [
