@@ -15,11 +15,11 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'SQLdatabase'"
 		},
-		"UploadEvent_properties_typeProperties_scope": {
+		"EventBased_properties_typeProperties_scope": {
 			"type": "string",
 			"defaultValue": "/subscriptions/ff093b4d-e1b6-4506-b8f7-32420f93b811/resourceGroups/PenguinProject/providers/Microsoft.Storage/storageAccounts/inputblob"
 		},
-		"EventBased_properties_typeProperties_scope": {
+		"UploadEvent_properties_typeProperties_scope": {
 			"type": "string",
 			"defaultValue": "/subscriptions/ff093b4d-e1b6-4506-b8f7-32420f93b811/resourceGroups/PenguinProject/providers/Microsoft.Storage/storageAccounts/inputblob"
 		}
@@ -347,6 +347,97 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/EventBased')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "pipeline1",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
+					}
+				],
+				"type": "BlobEventsTrigger",
+				"typeProperties": {
+					"blobPathBeginsWith": "/uploadblob/blobs/up",
+					"blobPathEndsWith": ".csv",
+					"ignoreEmptyBlobs": true,
+					"scope": "[parameters('EventBased_properties_typeProperties_scope')]",
+					"events": [
+						"Microsoft.Storage.BlobCreated"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/pipeline1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Schedule')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Triggers pipeline, once a day at 12pm.",
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "pipeline1",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Day",
+						"interval": 1,
+						"startTime": "2020-10-12T08:24:00.000Z",
+						"timeZone": "UTC",
+						"schedule": {
+							"minutes": [
+								0
+							],
+							"hours": [
+								10
+							]
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/pipeline1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/UploadEvent')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Calls the pipeline whenever a file is uploaded",
+				"annotations": [],
+				"runtimeState": "Stopped",
+				"pipelines": [],
+				"type": "BlobEventsTrigger",
+				"typeProperties": {
+					"blobPathBeginsWith": "/uploadblob/blobs/",
+					"ignoreEmptyBlobs": true,
+					"scope": "[parameters('UploadEvent_properties_typeProperties_scope')]",
+					"events": [
+						"Microsoft.Storage.BlobCreated"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/Upsert_CSV_to_SQL')]",
 			"type": "Microsoft.DataFactory/factories/dataflows",
 			"apiVersion": "2018-06-01",
@@ -480,103 +571,12 @@
 							"name": "TagIDextraction"
 						}
 					],
-					"script": "source(output(\n\t\tEpoch as integer,\n\t\tWeight as double,\n\t\tJunk as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: true,\n\tmoveFiles: ['','historic_weight'],\n\twildcardPaths:['weight*.csv'],\n\tpartitionBy('hash', 1)) ~> WeightLogCSV\nsource(output(\n\t\tEpoch as integer,\n\t\tMessage as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: true,\n\tmoveFiles: ['','historic_serial'],\n\twildcardPaths:['serial*.csv']) ~> RawTagDataCSV\nWeightLogCSV derive(Date = trim(left(toString(toTimestamp(seconds(Epoch))),10)),\n\t\tTime = trim(right(toString(toTimestamp(seconds(Epoch))),8))) ~> DateTimeColumn\nColumnSorting keyGenerate(output(EventID as long),\n\tstartAt: 1L,\n\tpartitionBy('hash', 1)) ~> GenerateSurrogateKey\nGenerateSurrogateKey filter(0.8<Weight\r\n&&Weight<10) ~> Filter1\nFilter1 select(mapColumn(\n\t\tEpoch,\n\t\tWeight,\n\t\tDate,\n\t\tTime,\n\t\tEventID\n\t),\n\tpartitionBy('hash', 1),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> Select1\nRawTagDataCSV filter(startsWith(Message, 'TAG')) ~> Date\nTagIDextraction derive(Date = trim(left(toString(toTimestamp(seconds(Epoch))),10)),\n\t\tTime = trim(right(toString(toTimestamp(seconds(Epoch))),8))) ~> CleaningandDateTime\nCleaningandDateTime alterRow(upsertIf(true())) ~> CleanedData\nDateTimeColumn select(mapColumn(\n\t\tEpoch,\n\t\tWeight,\n\t\tDate,\n\t\tTime\n\t),\n\tskipDuplicateMapInputs: false,\n\tskipDuplicateMapOutputs: false) ~> ColumnSorting\nSelect1 select(mapColumn(\n\t\tEventID,\n\t\tEpoch,\n\t\tDate,\n\t\tTime,\n\t\tWeight\n\t),\n\tskipDuplicateMapInputs: false,\n\tskipDuplicateMapOutputs: false) ~> ReOrderColumns\nCleanedData keyGenerate(output(EventID as long),\n\tstartAt: 1L) ~> SurrogateKey1\nSurrogateKey1 select(mapColumn(\n\t\tEventID,\n\t\tEpoch,\n\t\tDate,\n\t\tTime,\n\t\tMessage\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> Select2\nDate derive(Message = toInteger(trim(right(trim(left(Message,7)),2)))) ~> TagIDextraction\nReOrderColumns sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:[(concat(toString(\"WeightLog_\") ,toString(currentDate())))],\n\tmapColumn(\n\t\tEventID,\n\t\tEpoch,\n\t\tDate,\n\t\tTime,\n\t\tWeight\n\t),\n\tpartitionBy('hash', 1)) ~> Sink\nSelect2 sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:[(concat(toString(\"TagLog_\") ,toString(currentDate())))],\n\tmapColumn(\n\t\tEventID,\n\t\tEpoch,\n\t\tDate,\n\t\tTime,\n\t\tMessage\n\t),\n\tpartitionBy('hash', 1)) ~> sink1"
+					"script": "source(output(\n\t\tEpoch as integer,\n\t\tWeight as double,\n\t\tJunk as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: true,\n\tmoveFiles: ['','historic_weight'],\n\twildcardPaths:['up_weight*.csv'],\n\tpartitionBy('hash', 1)) ~> WeightLogCSV\nsource(output(\n\t\tEpoch as integer,\n\t\tMessage as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: true,\n\tmoveFiles: ['','historic_serial'],\n\twildcardPaths:['up_serial*.csv']) ~> RawTagDataCSV\nWeightLogCSV derive(Date = trim(left(toString(toTimestamp(seconds(Epoch))),10)),\n\t\tTime = trim(right(toString(toTimestamp(seconds(Epoch))),8))) ~> DateTimeColumn\nColumnSorting keyGenerate(output(EventID as long),\n\tstartAt: 1L,\n\tpartitionBy('hash', 1)) ~> GenerateSurrogateKey\nGenerateSurrogateKey filter(0.8<Weight\r\n&&Weight<10) ~> Filter1\nFilter1 select(mapColumn(\n\t\tEpoch,\n\t\tWeight,\n\t\tDate,\n\t\tTime,\n\t\tEventID\n\t),\n\tpartitionBy('hash', 1),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> Select1\nRawTagDataCSV filter(startsWith(Message, 'TAG')) ~> Date\nTagIDextraction derive(Date = trim(left(toString(toTimestamp(seconds(Epoch))),10)),\n\t\tTime = trim(right(toString(toTimestamp(seconds(Epoch))),8))) ~> CleaningandDateTime\nCleaningandDateTime alterRow(upsertIf(true())) ~> CleanedData\nDateTimeColumn select(mapColumn(\n\t\tEpoch,\n\t\tWeight,\n\t\tDate,\n\t\tTime\n\t),\n\tskipDuplicateMapInputs: false,\n\tskipDuplicateMapOutputs: false) ~> ColumnSorting\nSelect1 select(mapColumn(\n\t\tEventID,\n\t\tEpoch,\n\t\tDate,\n\t\tTime,\n\t\tWeight\n\t),\n\tskipDuplicateMapInputs: false,\n\tskipDuplicateMapOutputs: false) ~> ReOrderColumns\nCleanedData keyGenerate(output(EventID as long),\n\tstartAt: 1L) ~> SurrogateKey1\nSurrogateKey1 select(mapColumn(\n\t\tEventID,\n\t\tEpoch,\n\t\tDate,\n\t\tTime,\n\t\tMessage\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> Select2\nDate derive(Message = toInteger(trim(right(trim(left(Message,7)),2)))) ~> TagIDextraction\nReOrderColumns sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:[(concat(toString(\"WeightLog_\") ,toString(currentDate())))],\n\tmapColumn(\n\t\tEventID,\n\t\tEpoch,\n\t\tDate,\n\t\tTime,\n\t\tWeight\n\t),\n\tpartitionBy('hash', 1)) ~> Sink\nSelect2 sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:[(concat(toString(\"TagLog_\") ,toString(currentDate())))],\n\tmapColumn(\n\t\tEventID,\n\t\tEpoch,\n\t\tDate,\n\t\tTime,\n\t\tMessage\n\t),\n\tpartitionBy('hash', 1)) ~> sink1"
 				}
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/datasets/UploadedCSV')]",
 				"[concat(variables('factoryId'), '/datasets/EventOutputCSV')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/Schedule')]",
-			"type": "Microsoft.DataFactory/factories/triggers",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"description": "Triggers pipeline, once a day at 12pm.",
-				"annotations": [],
-				"runtimeState": "Started",
-				"pipelines": [
-					{
-						"pipelineReference": {
-							"referenceName": "pipeline1",
-							"type": "PipelineReference"
-						},
-						"parameters": {}
-					}
-				],
-				"type": "ScheduleTrigger",
-				"typeProperties": {
-					"recurrence": {
-						"frequency": "Day",
-						"interval": 1,
-						"startTime": "2020-10-12T08:24:00.000Z",
-						"timeZone": "UTC",
-						"schedule": {
-							"minutes": [
-								0
-							],
-							"hours": [
-								10
-							]
-						}
-					}
-				}
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/pipelines/pipeline1')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/UploadEvent')]",
-			"type": "Microsoft.DataFactory/factories/triggers",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"description": "Calls the pipeline whenever a file is uploaded",
-				"annotations": [],
-				"runtimeState": "Stopped",
-				"pipelines": [],
-				"type": "BlobEventsTrigger",
-				"typeProperties": {
-					"blobPathBeginsWith": "/uploadblob/blobs/",
-					"ignoreEmptyBlobs": true,
-					"scope": "[parameters('UploadEvent_properties_typeProperties_scope')]",
-					"events": [
-						"Microsoft.Storage.BlobCreated"
-					]
-				}
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/EventBased')]",
-			"type": "Microsoft.DataFactory/factories/triggers",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"annotations": [],
-				"runtimeState": "Started",
-				"pipelines": [
-					{
-						"pipelineReference": {
-							"referenceName": "pipeline1",
-							"type": "PipelineReference"
-						},
-						"parameters": {}
-					}
-				],
-				"type": "BlobEventsTrigger",
-				"typeProperties": {
-					"blobPathBeginsWith": "/uploadblob/blobs/up",
-					"blobPathEndsWith": ".csv",
-					"ignoreEmptyBlobs": true,
-					"scope": "[parameters('EventBased_properties_typeProperties_scope')]",
-					"events": [
-						"Microsoft.Storage.BlobCreated"
-					]
-				}
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/pipelines/pipeline1')]"
 			]
 		}
 	]

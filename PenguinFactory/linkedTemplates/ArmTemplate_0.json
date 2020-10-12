@@ -424,7 +424,7 @@
 							"name": "TagIDextraction"
 						}
 					],
-					"script": "source(output(\n\t\tEpoch as integer,\n\t\tWeight as double,\n\t\tJunk as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: true,\n\tmoveFiles: ['','historic_weight'],\n\twildcardPaths:['weight*.csv'],\n\tpartitionBy('hash', 1)) ~> WeightLogCSV\nsource(output(\n\t\tEpoch as integer,\n\t\tMessage as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: true,\n\tmoveFiles: ['','historic_serial'],\n\twildcardPaths:['serial*.csv']) ~> RawTagDataCSV\nWeightLogCSV derive(Date = trim(left(toString(toTimestamp(seconds(Epoch))),10)),\n\t\tTime = trim(right(toString(toTimestamp(seconds(Epoch))),8))) ~> DateTimeColumn\nColumnSorting keyGenerate(output(EventID as long),\n\tstartAt: 1L,\n\tpartitionBy('hash', 1)) ~> GenerateSurrogateKey\nGenerateSurrogateKey filter(0.8<Weight\r\n&&Weight<10) ~> Filter1\nFilter1 select(mapColumn(\n\t\tEpoch,\n\t\tWeight,\n\t\tDate,\n\t\tTime,\n\t\tEventID\n\t),\n\tpartitionBy('hash', 1),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> Select1\nRawTagDataCSV filter(startsWith(Message, 'TAG')) ~> Date\nTagIDextraction derive(Date = trim(left(toString(toTimestamp(seconds(Epoch))),10)),\n\t\tTime = trim(right(toString(toTimestamp(seconds(Epoch))),8))) ~> CleaningandDateTime\nCleaningandDateTime alterRow(upsertIf(true())) ~> CleanedData\nDateTimeColumn select(mapColumn(\n\t\tEpoch,\n\t\tWeight,\n\t\tDate,\n\t\tTime\n\t),\n\tskipDuplicateMapInputs: false,\n\tskipDuplicateMapOutputs: false) ~> ColumnSorting\nSelect1 select(mapColumn(\n\t\tEventID,\n\t\tEpoch,\n\t\tDate,\n\t\tTime,\n\t\tWeight\n\t),\n\tskipDuplicateMapInputs: false,\n\tskipDuplicateMapOutputs: false) ~> ReOrderColumns\nCleanedData keyGenerate(output(EventID as long),\n\tstartAt: 1L) ~> SurrogateKey1\nSurrogateKey1 select(mapColumn(\n\t\tEventID,\n\t\tEpoch,\n\t\tDate,\n\t\tTime,\n\t\tMessage\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> Select2\nDate derive(Message = toInteger(trim(right(trim(left(Message,7)),2)))) ~> TagIDextraction\nReOrderColumns sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:[(concat(toString(\"WeightLog_\") ,toString(currentDate())))],\n\tmapColumn(\n\t\tEventID,\n\t\tEpoch,\n\t\tDate,\n\t\tTime,\n\t\tWeight\n\t),\n\tpartitionBy('hash', 1)) ~> Sink\nSelect2 sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:[(concat(toString(\"TagLog_\") ,toString(currentDate())))],\n\tmapColumn(\n\t\tEventID,\n\t\tEpoch,\n\t\tDate,\n\t\tTime,\n\t\tMessage\n\t),\n\tpartitionBy('hash', 1)) ~> sink1"
+					"script": "source(output(\n\t\tEpoch as integer,\n\t\tWeight as double,\n\t\tJunk as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: true,\n\tmoveFiles: ['','historic_weight'],\n\twildcardPaths:['up_weight*.csv'],\n\tpartitionBy('hash', 1)) ~> WeightLogCSV\nsource(output(\n\t\tEpoch as integer,\n\t\tMessage as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: true,\n\tmoveFiles: ['','historic_serial'],\n\twildcardPaths:['up_serial*.csv']) ~> RawTagDataCSV\nWeightLogCSV derive(Date = trim(left(toString(toTimestamp(seconds(Epoch))),10)),\n\t\tTime = trim(right(toString(toTimestamp(seconds(Epoch))),8))) ~> DateTimeColumn\nColumnSorting keyGenerate(output(EventID as long),\n\tstartAt: 1L,\n\tpartitionBy('hash', 1)) ~> GenerateSurrogateKey\nGenerateSurrogateKey filter(0.8<Weight\r\n&&Weight<10) ~> Filter1\nFilter1 select(mapColumn(\n\t\tEpoch,\n\t\tWeight,\n\t\tDate,\n\t\tTime,\n\t\tEventID\n\t),\n\tpartitionBy('hash', 1),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> Select1\nRawTagDataCSV filter(startsWith(Message, 'TAG')) ~> Date\nTagIDextraction derive(Date = trim(left(toString(toTimestamp(seconds(Epoch))),10)),\n\t\tTime = trim(right(toString(toTimestamp(seconds(Epoch))),8))) ~> CleaningandDateTime\nCleaningandDateTime alterRow(upsertIf(true())) ~> CleanedData\nDateTimeColumn select(mapColumn(\n\t\tEpoch,\n\t\tWeight,\n\t\tDate,\n\t\tTime\n\t),\n\tskipDuplicateMapInputs: false,\n\tskipDuplicateMapOutputs: false) ~> ColumnSorting\nSelect1 select(mapColumn(\n\t\tEventID,\n\t\tEpoch,\n\t\tDate,\n\t\tTime,\n\t\tWeight\n\t),\n\tskipDuplicateMapInputs: false,\n\tskipDuplicateMapOutputs: false) ~> ReOrderColumns\nCleanedData keyGenerate(output(EventID as long),\n\tstartAt: 1L) ~> SurrogateKey1\nSurrogateKey1 select(mapColumn(\n\t\tEventID,\n\t\tEpoch,\n\t\tDate,\n\t\tTime,\n\t\tMessage\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> Select2\nDate derive(Message = toInteger(trim(right(trim(left(Message,7)),2)))) ~> TagIDextraction\nReOrderColumns sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:[(concat(toString(\"WeightLog_\") ,toString(currentDate())))],\n\tmapColumn(\n\t\tEventID,\n\t\tEpoch,\n\t\tDate,\n\t\tTime,\n\t\tWeight\n\t),\n\tpartitionBy('hash', 1)) ~> Sink\nSelect2 sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:[(concat(toString(\"TagLog_\") ,toString(currentDate())))],\n\tmapColumn(\n\t\tEventID,\n\t\tEpoch,\n\t\tDate,\n\t\tTime,\n\t\tMessage\n\t),\n\tpartitionBy('hash', 1)) ~> sink1"
 				}
 			},
 			"dependsOn": [
@@ -510,6 +510,37 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/EventBased')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "pipeline1",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
+					}
+				],
+				"type": "BlobEventsTrigger",
+				"typeProperties": {
+					"blobPathBeginsWith": "/uploadblob/blobs/up",
+					"blobPathEndsWith": ".csv",
+					"ignoreEmptyBlobs": true,
+					"scope": "[parameters('EventBased_properties_typeProperties_scope')]",
+					"events": [
+						"Microsoft.Storage.BlobCreated"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/pipeline1')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/Schedule')]",
 			"type": "Microsoft.DataFactory/factories/triggers",
 			"apiVersion": "2018-06-01",
@@ -542,37 +573,6 @@
 							]
 						}
 					}
-				}
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/pipelines/pipeline1')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/EventBased')]",
-			"type": "Microsoft.DataFactory/factories/triggers",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"annotations": [],
-				"runtimeState": "Started",
-				"pipelines": [
-					{
-						"pipelineReference": {
-							"referenceName": "pipeline1",
-							"type": "PipelineReference"
-						},
-						"parameters": {}
-					}
-				],
-				"type": "BlobEventsTrigger",
-				"typeProperties": {
-					"blobPathBeginsWith": "/uploadblob/blobs/up",
-					"blobPathEndsWith": ".csv",
-					"ignoreEmptyBlobs": true,
-					"scope": "[parameters('EventBased_properties_typeProperties_scope')]",
-					"events": [
-						"Microsoft.Storage.BlobCreated"
-					]
 				}
 			},
 			"dependsOn": [
