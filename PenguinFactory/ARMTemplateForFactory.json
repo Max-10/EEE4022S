@@ -489,9 +489,9 @@
 			"type": "Microsoft.DataFactory/factories/triggers",
 			"apiVersion": "2018-06-01",
 			"properties": {
-				"description": "Triggers pipeline, once a day at midnight",
+				"description": "Triggers pipeline, once a day at 12pm.",
 				"annotations": [],
-				"runtimeState": "Stopped",
+				"runtimeState": "Started",
 				"pipelines": [
 					{
 						"pipelineReference": {
@@ -513,7 +513,7 @@
 								0
 							],
 							"hours": [
-								0
+								10
 							]
 						}
 					}
@@ -531,15 +531,7 @@
 				"description": "Calls the pipeline whenever a file is uploaded",
 				"annotations": [],
 				"runtimeState": "Stopped",
-				"pipelines": [
-					{
-						"pipelineReference": {
-							"referenceName": "pipeline1",
-							"type": "PipelineReference"
-						},
-						"parameters": {}
-					}
-				],
+				"pipelines": [],
 				"type": "BlobEventsTrigger",
 				"typeProperties": {
 					"blobPathBeginsWith": "/uploadblob/blobs/",
@@ -550,9 +542,7 @@
 					]
 				}
 			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/pipelines/pipeline1')]"
-			]
+			"dependsOn": []
 		}
 	]
 }
