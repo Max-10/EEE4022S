@@ -1,9 +1,9 @@
 {
 	"name": "Schedule",
 	"properties": {
-		"description": "Triggers pipeline, once a day at midnight",
+		"description": "Triggers pipeline, once a day at 12pm.",
 		"annotations": [],
-		"runtimeState": "Stopped",
+		"runtimeState": "Started",
 		"pipelines": [
 			{
 				"pipelineReference": {
@@ -24,7 +24,7 @@
 						0
 					],
 					"hours": [
-						0
+						10
 					]
 				}
 			}
