@@ -1,0 +1,26 @@
+{
+	"name": "UploadEvent",
+	"properties": {
+		"description": "Calls the pipeline whenever a file is uploaded",
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "pipeline1",
+					"type": "PipelineReference"
+				}
+			}
+		],
+		"type": "BlobEventsTrigger",
+		"typeProperties": {
+			"blobPathBeginsWith": "/uploadblob/blobs/",
+			"blobPathEndsWith": "up.csv",
+			"ignoreEmptyBlobs": true,
+			"scope": "/subscriptions/ff093b4d-e1b6-4506-b8f7-32420f93b811/resourceGroups/PenguinProject/providers/Microsoft.Storage/storageAccounts/inputblob",
+			"events": [
+				"Microsoft.Storage.BlobCreated"
+			]
+		}
+	}
+}
