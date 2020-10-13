@@ -384,7 +384,7 @@
 			"properties": {
 				"description": "Triggers pipeline, once a day at 12pm.",
 				"annotations": [],
-				"runtimeState": "Started",
+				"runtimeState": "Stopped",
 				"pipelines": [
 					{
 						"pipelineReference": {
