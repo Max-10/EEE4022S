@@ -14,11 +14,6 @@
 				"precision": 10
 			},
 			{
-				"name": "Epoch",
-				"type": "int",
-				"precision": 10
-			},
-			{
 				"name": "EventDate",
 				"type": "date"
 			},
@@ -31,6 +26,16 @@
 				"name": "PenguinWeight",
 				"type": "float",
 				"precision": 15
+			},
+			{
+				"name": "ColonyID",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "TagID",
+				"type": "int",
+				"precision": 10
 			}
 		],
 		"typeProperties": {
