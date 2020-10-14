@@ -1,0 +1,36 @@
+{
+	"name": "ColonyTable",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "SQLdatabase",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "ColonyID",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "ColonyName",
+				"type": "varchar"
+			},
+			{
+				"name": "Lat",
+				"type": "float",
+				"precision": 15
+			},
+			{
+				"name": "Long",
+				"type": "float",
+				"precision": 15
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "Colony"
+		}
+	}
+}
