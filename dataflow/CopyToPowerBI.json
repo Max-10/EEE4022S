@@ -1,0 +1,33 @@
+{
+	"name": "CopyToPowerBI",
+	"properties": {
+		"description": "",
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "PenguinEvent",
+						"type": "DatasetReference"
+					},
+					"name": "PenguinEvent"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "PowerBiPenguinEvent",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "AlterRow1"
+				}
+			],
+			"script": "source(output(\n\t\tEventID as integer,\n\t\tEventDate as date,\n\t\tEventTime as timestamp,\n\t\tPenguinWeight as double,\n\t\tColonyID as integer,\n\t\tTagID as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> PenguinEvent\nPenguinEvent alterRow(insertIf(1==1)) ~> AlterRow1\nAlterRow1 sink(input(\n\t\tEventID as integer,\n\t\tEventDate as date,\n\t\tEventTime as timestamp,\n\t\tTagID as integer,\n\t\tPenguinWeight as double,\n\t\tDirection as integer,\n\t\tChange as double,\n\t\tColonyID as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tpreSQLs:['SET IDENTITY_INSERT [dbo].[PenguinEventQuery] ON'],\n\tpostSQLs:['SET IDENTITY_INSERT [dbo].[PenguinEventQuery] OFF'],\n\tmapColumn(\n\t\tEventID,\n\t\tEventDate,\n\t\tEventTime,\n\t\tPenguinWeight,\n\t\tColonyID\n\t),\n\tskipDuplicateMapOutputs: true) ~> sink1"
+		}
+	}
+}

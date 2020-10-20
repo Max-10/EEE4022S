@@ -41,6 +41,11 @@
 				"name": "Change",
 				"type": "float",
 				"precision": 15
+			},
+			{
+				"name": "ColonyID",
+				"type": "int",
+				"precision": 10
 			}
 		],
 		"typeProperties": {
