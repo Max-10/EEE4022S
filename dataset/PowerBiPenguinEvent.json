@@ -1,0 +1,51 @@
+{
+	"name": "PowerBiPenguinEvent",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "PowerBISQL",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "EventID",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "EventDate",
+				"type": "date"
+			},
+			{
+				"name": "EventTime",
+				"type": "time",
+				"scale": 7
+			},
+			{
+				"name": "TagID",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "PenguinWeight",
+				"type": "float",
+				"precision": 15
+			},
+			{
+				"name": "Direction",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "Change",
+				"type": "float",
+				"precision": 15
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "PenguinEventQuery"
+		}
+	}
+}
