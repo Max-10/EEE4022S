@@ -8,6 +8,9 @@
 		"Blob_connectionString": {
 			"value": ""
 		},
+		"PowerBISQL_connectionString": {
+			"value": ""
+		},
 		"SQLdatabase_connectionString": {
 			"value": ""
 		},

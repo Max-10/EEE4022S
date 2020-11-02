@@ -11,6 +11,10 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'Blob'"
 		},
+		"PowerBISQL_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'PowerBISQL'"
+		},
 		"SQLdatabase_connectionString": {
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'SQLdatabase'"
@@ -57,6 +61,9 @@
 					"Blob_connectionString": {
 						"value": "[parameters('Blob_connectionString')]"
 					},
+					"PowerBISQL_connectionString": {
+						"value": "[parameters('PowerBISQL_connectionString')]"
+					},
 					"SQLdatabase_connectionString": {
 						"value": "[parameters('SQLdatabase_connectionString')]"
 					},
@@ -65,13 +72,33 @@
 					},
 					"ColonyEvent_properties_typeProperties_scope": {
 						"value": "[parameters('ColonyEvent_properties_typeProperties_scope')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "PenguinFactory_ArmTemplate_1",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2018-02-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_1.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
 					},
 					"EventBased_properties_typeProperties_scope": {
 						"value": "[parameters('EventBased_properties_typeProperties_scope')]"
 					}
 				}
 			},
-			"dependsOn": []
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', 'PenguinFactory_ArmTemplate_0')]"
+			]
 		}
 	]
 }
